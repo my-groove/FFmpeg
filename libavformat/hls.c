@@ -2343,6 +2343,16 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                         break;
                     }
 
+                    // HLS STREAM SEEK BACKWARDS FIX - taken from: https://patchwork.ffmpeg.org/project/ffmpeg/patch/20210525125238.325548-1-gustav.grusell@gmail.com/#64677
+                    /* If AVSEEK_FLAG_BACKWARD set and not AVSEEK_FLAG_ANY,
+                     * we return the first keyframe encountered */
+                    if (pls->seek_flags & AVSEEK_FLAG_BACKWARD &&
+                        !(pls->seek_flags & AVSEEK_FLAG_ANY) &&
+                        pls->pkt->flags & AV_PKT_FLAG_KEY) {
+                        pls->seek_timestamp = AV_NOPTS_VALUE;
+                        break;
+                    }
+
                     tb = get_timebase(pls);
                     ts_diff = av_rescale_rnd(pls->pkt->dts, AV_TIME_BASE,
                                             tb.den, AV_ROUND_DOWN) -
